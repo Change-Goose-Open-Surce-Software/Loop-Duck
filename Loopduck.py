@@ -10,12 +10,14 @@ import subprocess
 import argparse
 import re
 import webbrowser
+import time
 from datetime import datetime
 from typing import List, Tuple, Optional
 
 VERSION = "1.0"
 RELEASE_DATE = "2024-02-02 14:30"
 GITHUB_URL = "https://github.com/Change-Goose-Open-Surce-Software?tab=repositories"
+UPDATE_URL = "https://raw.githubusercontent.com/Change-Goose-Open-Surce-Software/Loop-Duck/main/install.sh"
 
 # Version History
 VERSION_HISTORY = {
@@ -26,72 +28,35 @@ VERSION_HISTORY = {
             "Loop-Funktionalität mit Wiederholungen",
             "Parameter: -c (changes), -o (output), -s (stop), -q (quit)",
             "Gegebenheiten-System mit Backticks",
-            "TUI mit Retro-Vibes",
-            "F&Q Menü",
-            "Update-Funktion"
+            "TUI mit Retro-Vibes und RGB-Effekten",
+            "F&Q Menü mit Pfeiltasten-Navigation",
+            "Update-Funktion mit wget"
         ]
     }
 }
 
-# FAQ Data
+# FAQ Data - NUR PLATZHALTER! Zum Ausfüllen gedacht
 FAQ_DATA = {
-    "a": {
-        "name": "Grundlagen",
-        "questions": {
-            "1a": {
-                "q": "Wie starte ich Loop Duck?",
-                "a": "Verwende 'Loop <Anzahl> <Befehl>' für einfache Loops oder 'loop duck' für das grafische Menü."
-            },
-            "2a": {
-                "q": "Was macht der -q Parameter?",
-                "a": "Der -q Parameter beendet das Programm sofort nach dem Start, um die Wiederholung zu beschleunigen."
-            }
-        }
-    },
-    "b": {
-        "name": "Parameter",
-        "questions": {
-            "1b": {
-                "q": "Wo stehen Parameter in der Befehlszeile?",
-                "a": "Parameter müssen IMMER vor dem Programm/Script stehen, da alles danach zum geloopten Programm gehört."
-            },
-            "2b": {
-                "q": "Was macht der -c Parameter?",
-                "a": "Der -c Parameter zeigt Unterschiede zwischen den Ausführungen an (changes)."
-            }
-        }
-    },
-    "c": {
-        "name": "Gegebenheiten",
-        "questions": {
-            "1c": {
-                "q": "Was sind Gegebenheiten?",
-                "a": "Gegebenheiten sind Bedingungen in Backticks, z.B. `-c =p` bedeutet: wenn changes positiv ist."
-            },
-            "2c": {
-                "q": "Wie funktioniert =p, =n?",
-                "a": "=p bedeutet positiv (Unterschiede vorhanden), =n bedeutet negativ (keine Unterschiede)."
-            }
-        }
-    },
-    "d": {
-        "name": "Fortgeschritten",
-        "questions": {
-            "1d": {
-                "q": "Wie breche ich einen Loop vorzeitig ab?",
-                "a": "Verwende den -s Parameter mit einer Gegebenheit, z.B. 'Loop -s `-c =n =7` <Befehl>' bricht ab, wenn in Loop 7 keine Änderungen sind."
-            }
-        }
-    },
-    "e": {
-        "name": "Installation",
-        "questions": {
-            "1e": {
-                "q": "Wie installiere ich Loop Duck?",
-                "a": "Speichere loopduck.py im System-PATH (z.B. /usr/local/bin/) und mache es ausführbar: chmod +x loopduck.py"
-            }
-        }
-    }
+    "Grundlagen": [
+        {"q": "Frage 1 - Platzhalter", "a": "Antwort 1 - Platzhalter"},
+        {"q": "Frage 2 - Platzhalter", "a": "Antwort 2 - Platzhalter"},
+        {"q": "Frage 3 - Platzhalter", "a": "Antwort 3 - Platzhalter"},
+    ],
+    "Parameter": [
+        {"q": "Frage 4 - Platzhalter", "a": "Antwort 4 - Platzhalter"},
+        {"q": "Frage 5 - Platzhalter", "a": "Antwort 5 - Platzhalter"},
+    ],
+    "Gegebenheiten": [
+        {"q": "Frage 6 - Platzhalter", "a": "Antwort 6 - Platzhalter"},
+        {"q": "Frage 7 - Platzhalter", "a": "Antwort 7 - Platzhalter"},
+    ],
+    "Fortgeschritten": [
+        {"q": "Frage 8 - Platzhalter", "a": "Antwort 8 - Platzhalter"},
+    ],
+    "Installation": [
+        {"q": "Frage 9 - Platzhalter", "a": "Antwort 9 - Platzhalter"},
+        {"q": "Frage 10 - Platzhalter", "a": "Antwort 10 - Platzhalter"},
+    ]
 }
 
 
@@ -210,7 +175,7 @@ class LoopDuck:
 
 def print_help():
     """Zeigt ausführliche Hilfe mit Beispielen"""
-    help_text = """
+    help_text = r"""
 🦆 Loop Duck - Terminal Loop Utility
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -236,7 +201,7 @@ BEISPIELE:
     Loop -q 3 steam
         → Startet Steam 3 mal und beendet es sofort wieder
         
-    Loop -s \`-c =n =7\` 20 ./test.sh
+    Loop -s `-c =n =7` 20 ./test.sh
         → Bricht ab wenn in Loop 7 keine Änderungen erkannt werden
 
 PARAMETER:
@@ -248,10 +213,10 @@ PARAMETER:
 GEGEBENHEITEN:
     Bedingungen in Backticks für -s Parameter:
     
-    \`-c =p\`         Changes positiv (Unterschiede vorhanden)
-    \`-c =n\`         Changes negativ (keine Unterschiede)
-    \`-c =p =3\`      Changes positiv in Loop 3
-    \`-c =n =7\`      Keine Changes in Loop 7
+    `-c =p`         Changes positiv (Unterschiede vorhanden)
+    `-c =n`         Changes negativ (keine Unterschiede)
+    `-c =p =3`      Changes positiv in Loop 3
+    `-c =n =7`      Keine Changes in Loop 7
 
 HINWEISE:
     • Alle Befehle laufen nacheinander, nicht parallel
@@ -260,7 +225,7 @@ HINWEISE:
     • Alles nach <Anzahl> gehört zum ausgeführten Befehl
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-by Change Goose | Version {VERSION}
+by Change Goose | Version """ + VERSION + """
 """
     print(help_text)
 
@@ -273,51 +238,400 @@ def show_tui():
     except ImportError:
         print("❌ curses Modul nicht verfügbar.")
         print("Verwende Loop Duck im Kommandozeilen-Modus.")
-        fallback_menu()
 
 
-def fallback_menu():
-    """Einfaches Fallback-Menü ohne curses"""
+def run_update():
+    """Führt das Update durch"""
+    print("\n" + "="*60)
+    print("🔄 Loop Duck Update")
+    print("="*60)
+    print(f"\nDownload von: {UPDATE_URL}")
+    print("\nFühre aus:")
+    print(f"  wget {UPDATE_URL}")
+    print("  chmod +x install.sh")
+    print("  ./install.sh")
+    print("\n" + "-"*60)
+    
+    confirm = input("\nUpdate jetzt starten? (j/n): ").lower()
+    
+    if confirm == 'j':
+        try:
+            cmd = f'wget {UPDATE_URL} && chmod +x install.sh && ./install.sh'
+            print(f"\n▶ Führe aus: {cmd}\n")
+            subprocess.run(cmd, shell=True)
+        except Exception as e:
+            print(f"\n❌ Fehler beim Update: {e}")
+    else:
+        print("\n⏸ Update abgebrochen")
+    
+    input("\n[Enter] zum Fortfahren...")
+
+
+def show_version_history_curses(stdscr):
+    """Zeigt Versionshistorie mit curses"""
+    import curses
+    
+    curses.curs_set(0)
+    stdscr.clear()
+    
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    
     while True:
-        print("\n" + "="*60)
-        print("🦆 Loop Duck - Hauptmenü")
-        print("="*60)
-        print(f"Version: {VERSION}")
-        print(f"by Change Goose")
-        print("\n1) Loop ausführen")
-        print("2) Versionshistorie")
-        print("3) F&Q")
-        print("4) Updates (Installation)")
-        print("5) GitHub öffnen")
-        print("0) Beenden")
-        print("="*60)
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
         
-        choice = input("\nAuswahl: ").strip()
+        # Header
+        title = "VERSIONSHISTORIE"
+        stdscr.addstr(1, w//2 - len(title)//2, title, curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(3, 0, "═" * w, curses.color_pair(1))
         
-        if choice == "1":
-            run_loop_interactive()
-        elif choice == "2":
-            show_version_history()
-        elif choice == "3":
-            show_faq_menu()
-        elif choice == "4":
-            print("\n📦 Update-Funktion würde hier das Installationsscript starten...")
-        elif choice == "5":
-            print(f"\n🌐 Öffne {GITHUB_URL}")
-            webbrowser.open(GITHUB_URL)
-        elif choice == "0":
-            print("\n👋 Auf Wiedersehen!")
+        y = 5
+        for version, info in sorted(VERSION_HISTORY.items(), reverse=True):
+            if y >= h - 3:
+                break
+                
+            stdscr.addstr(y, 2, f"Version {version}", curses.color_pair(2) | curses.A_BOLD)
+            y += 1
+            stdscr.addstr(y, 2, info['date'], curses.color_pair(3))
+            y += 2
+            
+            for change in info['changes']:
+                if y >= h - 3:
+                    break
+                stdscr.addstr(y, 4, f"• {change}", curses.color_pair(3))
+                y += 1
+            y += 1
+        
+        # Footer
+        stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(1))
+        stdscr.addstr(h-1, 2, "Enter: Zurück", curses.color_pair(3))
+        
+        stdscr.refresh()
+        
+        key = stdscr.getch()
+        if key == ord('\n') or key == ord('q'):
             break
+
+
+def show_faq_categories(stdscr):
+    """Zeigt FAQ Kategorien mit Pfeiltasten-Navigation"""
+    import curses
+    
+    curses.curs_set(0)
+    categories = list(FAQ_DATA.keys())
+    current_row = 0
+    
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        
+        # Header mit RGB-Effekt
+        title = "F&Q - KATEGORIEN"
+        stdscr.addstr(1, w//2 - len(title)//2, title, curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(3, 0, "═" * w, curses.color_pair(1))
+        
+        # Kategorien
+        for idx, category in enumerate(categories):
+            y = 5 + idx * 2
+            if y >= h - 3:
+                break
+                
+            if idx == current_row:
+                stdscr.addstr(y, 4, "► " + category, curses.color_pair(2) | curses.A_BOLD)
+            else:
+                stdscr.addstr(y, 4, "  " + category, curses.color_pair(3))
+        
+        # Footer
+        stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(1))
+        stdscr.addstr(h-1, 2, "↑↓: Navigieren | Enter: Öffnen | q: Zurück", curses.color_pair(3))
+        
+        stdscr.refresh()
+        
+        key = stdscr.getch()
+        
+        if key == curses.KEY_UP and current_row > 0:
+            current_row -= 1
+        elif key == curses.KEY_DOWN and current_row < len(categories) - 1:
+            current_row += 1
+        elif key == ord('\n'):
+            show_faq_questions(stdscr, categories[current_row])
+        elif key == ord('q'):
+            break
+
+
+def show_faq_questions(stdscr, category):
+    """Zeigt Fragen einer Kategorie mit Pfeiltasten-Navigation"""
+    import curses
+    
+    curses.curs_set(0)
+    questions = FAQ_DATA[category]
+    current_row = 0
+    
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        
+        # Header
+        title = f"F&Q - {category.upper()}"
+        stdscr.addstr(1, w//2 - len(title)//2, title, curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(3, 0, "═" * w, curses.color_pair(1))
+        
+        # Fragen
+        for idx, qa in enumerate(questions):
+            y = 5 + idx * 2
+            if y >= h - 3:
+                break
+                
+            question_num = str(idx + 1)
+            if idx == current_row:
+                stdscr.addstr(y, 4, f"► {question_num}. {qa['q']}"[:w-6], curses.color_pair(2) | curses.A_BOLD)
+            else:
+                stdscr.addstr(y, 4, f"  {question_num}. {qa['q']}"[:w-6], curses.color_pair(3))
+        
+        # Footer
+        stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(1))
+        stdscr.addstr(h-1, 2, "↑↓: Navigieren | Enter: Antwort | q: Zurück", curses.color_pair(3))
+        
+        stdscr.refresh()
+        
+        key = stdscr.getch()
+        
+        if key == curses.KEY_UP and current_row > 0:
+            current_row -= 1
+        elif key == curses.KEY_DOWN and current_row < len(questions) - 1:
+            current_row += 1
+        elif key == ord('\n'):
+            show_faq_answer(stdscr, category, questions[current_row])
+        elif key == ord('q'):
+            break
+
+
+def show_faq_answer(stdscr, category, qa):
+    """Zeigt eine einzelne Antwort"""
+    import curses
+    
+    curses.curs_set(0)
+    
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        
+        # Header
+        title = f"F&Q - {category.upper()}"
+        stdscr.addstr(1, w//2 - len(title)//2, title, curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(3, 0, "═" * w, curses.color_pair(1))
+        
+        # Frage
+        stdscr.addstr(5, 2, "FRAGE:", curses.color_pair(2) | curses.A_BOLD)
+        
+        # Word wrap für Frage
+        y = 6
+        words = qa['q'].split()
+        line = ""
+        for word in words:
+            if len(line) + len(word) + 1 <= w - 4:
+                line += word + " "
+            else:
+                stdscr.addstr(y, 2, line.strip(), curses.color_pair(3))
+                y += 1
+                line = word + " "
+        if line:
+            stdscr.addstr(y, 2, line.strip(), curses.color_pair(3))
+            y += 1
+        
+        y += 1
+        stdscr.addstr(y, 2, "ANTWORT:", curses.color_pair(2) | curses.A_BOLD)
+        y += 1
+        
+        # Word wrap für Antwort
+        words = qa['a'].split()
+        line = ""
+        for word in words:
+            if len(line) + len(word) + 1 <= w - 4:
+                line += word + " "
+            else:
+                if y < h - 3:
+                    stdscr.addstr(y, 2, line.strip(), curses.color_pair(3))
+                    y += 1
+                line = word + " "
+        if line and y < h - 3:
+            stdscr.addstr(y, 2, line.strip(), curses.color_pair(3))
+        
+        # Footer
+        stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(1))
+        stdscr.addstr(h-1, 2, "Enter/q: Zurück", curses.color_pair(3))
+        
+        stdscr.refresh()
+        
+        key = stdscr.getch()
+        if key == ord('\n') or key == ord('q'):
+            break
+
+
+def main_menu(stdscr):
+    """Hauptmenü mit RGB-Effekten und Retro-Style"""
+    import curses
+    
+    curses.curs_set(0)
+    stdscr.clear()
+    stdscr.nodelay(True)  # Non-blocking input für Animationen
+    
+    # Erweiterte Farbpalette
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(6, curses.COLOR_BLUE, curses.COLOR_BLACK)
+    
+    menu_items = [
+        "Loop ausführen",
+        "Versionshistorie",
+        "F&Q",
+        "Updates",
+        "GitHub öffnen",
+        "Beenden"
+    ]
+    
+    current_row = 0
+    color_cycle = 0
+    frame = 0
+    
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        
+        # Animierter RGB Header
+        frame += 1
+        color_idx = (frame // 10) % 6 + 1
+        
+        # ASCII Art Logo
+        logo = [
+            "╔═══════════════════════════════════════╗",
+            "║    ██╗      ██████╗  ██████╗ ██████╗ ║",
+            "║    ██║     ██╔═══██╗██╔═══██╗██╔══██╗║",
+            "║    ██║     ██║   ██║██║   ██║██████╔╝║",
+            "║    ██║     ██║   ██║██║   ██║██╔═══╝ ║",
+            "║    ███████╗╚██████╔╝╚██████╔╝██║     ║",
+            "║    ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ║",
+            "║                                       ║",
+            "║    ██████╗ ██╗   ██╗ ██████╗██╗  ██╗ ║",
+            "║    ██╔══██╗██║   ██║██╔════╝██║ ██╔╝ ║",
+            "║    ██║  ██║██║   ██║██║     █████╔╝  ║",
+            "║    ██║  ██║██║   ██║██║     ██╔═██╗  ║",
+            "║    ██████╔╝╚██████╔╝╚██████╗██║  ██╗ ║",
+            "║    ╚═════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝ ║",
+            "╚═══════════════════════════════════════╝"
+        ]
+        
+        start_y = 1
+        for i, line in enumerate(logo):
+            if start_y + i < h:
+                x = max(0, w//2 - len(line)//2)
+                stdscr.addstr(start_y + i, x, line, curses.color_pair(color_idx) | curses.A_BOLD)
+        
+        # Version Info mit Effekt
+        y = start_y + len(logo) + 1
+        version_text = f"version: {VERSION}"
+        author_text = "by Change Goose"
+        
+        if y < h - 2:
+            stdscr.addstr(y, 2, "Loop", curses.color_pair(2) | curses.A_BOLD)
+            stdscr.addstr(y, 7, version_text, curses.color_pair(3))
+            y += 1
+        
+        if y < h - 2:
+            stdscr.addstr(y, 2, "Duck", curses.color_pair(4) | curses.A_BOLD)
+            stdscr.addstr(y, 7, author_text, curses.color_pair(5))
+            y += 1
+        
+        # Trennlinie mit RGB
+        y += 1
+        if y < h - 2:
+            border = "━" * w
+            stdscr.addstr(y, 0, border, curses.color_pair(color_idx))
+            y += 2
+        
+        # Menü-Items mit Retro-Style
+        for idx, item in enumerate(menu_items):
+            if y >= h - 3:
+                break
+                
+            x = w//4
+            
+            if idx == current_row:
+                # Ausgewähltes Item mit Animation
+                prefix = "►►►" if frame % 20 < 10 else "►► "
+                stdscr.addstr(y, x, prefix + " " + item, curses.color_pair(2) | curses.A_BOLD | curses.A_REVERSE)
+            else:
+                stdscr.addstr(y, x + 4, item, curses.color_pair(3))
+            
+            y += 2
+        
+        # Footer mit RGB
+        if h > 2:
+            stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(color_idx))
+            footer = "↑↓: Nav | Enter: OK | q: Exit"
+            stdscr.addstr(h-1, w//2 - len(footer)//2, footer, curses.color_pair(3) | curses.A_BOLD)
+        
+        stdscr.refresh()
+        
+        # Input mit Timeout für Animation
+        try:
+            key = stdscr.getch()
+        except:
+            key = -1
+        
+        if key == -1:
+            time.sleep(0.05)  # Animation delay
+            continue
+        
+        stdscr.nodelay(False)  # Blocking input für Menü-Interaktion
+        
+        if key == curses.KEY_UP and current_row > 0:
+            current_row -= 1
+        elif key == curses.KEY_DOWN and current_row < len(menu_items) - 1:
+            current_row += 1
+        elif key == ord('\n'):
+            if current_row == 0:  # Loop ausführen
+                curses.endwin()
+                run_loop_interactive()
+                stdscr = curses.initscr()
+                curses.curs_set(0)
+            elif current_row == 1:  # Versionshistorie
+                show_version_history_curses(stdscr)
+            elif current_row == 2:  # F&Q
+                show_faq_categories(stdscr)
+            elif current_row == 3:  # Updates
+                curses.endwin()
+                run_update()
+                stdscr = curses.initscr()
+                curses.curs_set(0)
+            elif current_row == 4:  # GitHub
+                curses.endwin()
+                print(f"\n🌐 Öffne {GITHUB_URL}")
+                webbrowser.open(GITHUB_URL)
+                input("\n[Enter] zum Fortfahren...")
+                stdscr = curses.initscr()
+                curses.curs_set(0)
+            elif current_row == 5:  # Beenden
+                break
+        elif key == ord('q'):
+            break
+        
+        stdscr.nodelay(True)  # Zurück zu non-blocking für Animation
 
 
 def run_loop_interactive():
     """Interaktive Loop-Ausführung"""
-    print("\n" + "-"*60)
-    print("Loop-Ausführung")
-    print("-"*60)
+    print("\n" + "="*60)
+    print("🦆 Loop-Ausführung")
+    print("="*60)
     
     try:
-        iterations = int(input("Anzahl der Wiederholungen: "))
+        iterations = int(input("\nAnzahl der Wiederholungen: "))
         command = input("Befehl: ").strip()
         
         use_changes = input("Changes erkennen? (j/n): ").lower() == 'j'
@@ -333,168 +647,8 @@ def run_loop_interactive():
         print("❌ Ungültige Eingabe!")
     except KeyboardInterrupt:
         print("\n\n⏸ Abgebrochen")
-
-
-def show_version_history():
-    """Zeigt die Versionshistorie"""
-    print("\n" + "="*60)
-    print("📜 Loop Duck - Versionshistorie")
-    print("="*60)
-    
-    for version, info in sorted(VERSION_HISTORY.items(), reverse=True):
-        print(f"\n🔖 Version {version} - {info['date']}")
-        print("-" * 40)
-        for change in info['changes']:
-            print(f"  • {change}")
     
     input("\n[Enter] zum Fortfahren...")
-
-
-def show_faq_menu():
-    """Zeigt das F&Q Menü"""
-    while True:
-        print("\n" + "="*60)
-        print("❓ F&Q - Häufig gestellte Fragen")
-        print("="*60)
-        
-        print("\nKategorien:")
-        for key, cat in FAQ_DATA.items():
-            print(f"  {key}) {cat['name']}")
-        print("  0) Zurück")
-        
-        choice = input("\nKategorie wählen: ").strip().lower()
-        
-        if choice == "0":
-            break
-        elif choice in FAQ_DATA:
-            show_category_questions(choice)
-        else:
-            print("❌ Ungültige Auswahl!")
-
-
-def show_category_questions(category: str):
-    """Zeigt Fragen einer Kategorie"""
-    cat_data = FAQ_DATA[category]
-    
-    while True:
-        print("\n" + "-"*60)
-        print(f"Kategorie: {cat_data['name']}")
-        print("-"*60)
-        
-        print("\nFragen:")
-        for qid, qdata in cat_data['questions'].items():
-            print(f"  {qid}) {qdata['q']}")
-        print("  0) Zurück")
-        
-        choice = input("\nFrage auswählen: ").strip().lower()
-        
-        if choice == "0":
-            break
-        elif choice in cat_data['questions']:
-            print("\n" + "="*60)
-            print("Frage:", cat_data['questions'][choice]['q'])
-            print("="*60)
-            print("\nAntwort:")
-            print(cat_data['questions'][choice]['a'])
-            input("\n[Enter] zum Fortfahren...")
-        else:
-            print("❌ Ungültige Auswahl!")
-
-
-def main_menu(stdscr):
-    """Hauptmenü mit curses (Retro-Style)"""
-    import curses
-    
-    curses.curs_set(0)
-    stdscr.clear()
-    
-    # Farbschema definieren
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    
-    menu_items = [
-        "Loop ausführen",
-        "Versionshistorie",
-        "F&Q",
-        "Updates",
-        "GitHub öffnen",
-        "Beenden"
-    ]
-    
-    current_row = 0
-    
-    while True:
-        stdscr.clear()
-        h, w = stdscr.getmaxyx()
-        
-        # Header
-        title = "LOOP DUCK"
-        stdscr.addstr(1, w//2 - len(title)//2, title, curses.color_pair(1) | curses.A_BOLD)
-        
-        # Untertitel
-        subtitle = f"version: {VERSION}"
-        stdscr.addstr(2, 2, "Loop", curses.color_pair(2))
-        stdscr.addstr(2, 7, subtitle, curses.color_pair(3))
-        
-        author = "by Change Goose"
-        stdscr.addstr(3, 2, "Duck", curses.color_pair(2))
-        stdscr.addstr(3, 7, author, curses.color_pair(3))
-        
-        # Trennlinie
-        stdscr.addstr(4, 0, "─" * w, curses.color_pair(1))
-        
-        # Menü-Items
-        for idx, item in enumerate(menu_items):
-            y = 6 + idx * 2
-            x = 4
-            
-            if idx == current_row:
-                stdscr.addstr(y, x, "► " + item, curses.color_pair(2) | curses.A_BOLD)
-            else:
-                stdscr.addstr(y, x, "  " + item, curses.color_pair(3))
-        
-        # Footer
-        stdscr.addstr(h-2, 0, "─" * w, curses.color_pair(1))
-        stdscr.addstr(h-1, 2, "↑↓: Navigieren | Enter: Auswählen | q: Beenden", curses.color_pair(3))
-        
-        stdscr.refresh()
-        
-        # Input
-        key = stdscr.getch()
-        
-        if key == curses.KEY_UP and current_row > 0:
-            current_row -= 1
-        elif key == curses.KEY_DOWN and current_row < len(menu_items) - 1:
-            current_row += 1
-        elif key == ord('\n'):
-            if current_row == 0:  # Loop ausführen
-                curses.endwin()
-                run_loop_interactive()
-                stdscr = curses.initscr()
-                curses.curs_set(0)
-            elif current_row == 1:  # Versionshistorie
-                curses.endwin()
-                show_version_history()
-                stdscr = curses.initscr()
-                curses.curs_set(0)
-            elif current_row == 2:  # F&Q
-                curses.endwin()
-                show_faq_menu()
-                stdscr = curses.initscr()
-                curses.curs_set(0)
-            elif current_row == 3:  # Updates
-                curses.endwin()
-                print("\n📦 Update-Funktion würde hier das Installationsscript starten...")
-                input("[Enter] zum Fortfahren...")
-                stdscr = curses.initscr()
-                curses.curs_set(0)
-            elif current_row == 4:  # GitHub
-                webbrowser.open(GITHUB_URL)
-            elif current_row == 5:  # Beenden
-                break
-        elif key == ord('q'):
-            break
 
 
 def main():
@@ -504,7 +658,11 @@ def main():
     if len(sys.argv) >= 2:
         if sys.argv[1].lower() == "duck":
             if len(sys.argv) >= 3 and sys.argv[2].lower() == "version":
-                show_version_history()
+                try:
+                    import curses
+                    curses.wrapper(show_version_history_curses)
+                except:
+                    print("Versionshistorie im Textmodus nicht verfügbar.")
                 return
             else:
                 show_tui()
